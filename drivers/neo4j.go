@@ -2,7 +2,6 @@ package drivers
 
 import (
 	"context"
-	"github.com/Lincyaw/PaperGraph-backend/logger"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/spf13/viper"
 	"sync"
@@ -38,28 +37,13 @@ func (m *Neo4jSessionManager) Close(ctx context.Context) {
 
 // ExecuteWrite 执行写入操作
 func (m *Neo4jSessionManager) ExecuteWrite(ctx context.Context, query string, params map[string]interface{}) error {
-	session := m.driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-	defer func(session neo4j.SessionWithContext, ctx context.Context) {
-		err := session.Close(ctx)
-		if err != nil {
-			logger.Error("closing session failed", "msg", err)
-		}
-	}(session, ctx)
-	_, err := session.Run(ctx, query, params)
+	_, err := neo4j.ExecuteQuery(ctx, m.driver, query, params, neo4j.EagerResultTransformer, neo4j.ExecuteQueryWithDatabase(""))
 	return err
 }
 
 // ExecuteRead 执行读取操作
-func (m *Neo4jSessionManager) ExecuteRead(ctx context.Context, query string, params map[string]interface{}) (neo4j.ResultWithContext, error) {
-	session := m.driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
-	defer func(session neo4j.SessionWithContext, ctx context.Context) {
-		err := session.Close(ctx)
-		if err != nil {
-			logger.Error("closing session failed", "msg", err)
-		}
-	}(session, ctx)
-
-	return session.Run(ctx, query, params)
+func (m *Neo4jSessionManager) ExecuteRead(ctx context.Context, query string, params map[string]interface{}) (*neo4j.EagerResult, error) {
+	return neo4j.ExecuteQuery(ctx, m.driver, query, params, neo4j.EagerResultTransformer, neo4j.ExecuteQueryWithDatabase(""))
 }
 
 // GetInstance 获取单例实例

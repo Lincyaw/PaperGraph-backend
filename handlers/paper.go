@@ -6,6 +6,7 @@ import (
 	"github.com/Lincyaw/PaperGraph-backend/drivers"
 	"github.com/Lincyaw/PaperGraph-backend/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j/dbtype"
 	"net/http"
 )
 
@@ -17,7 +18,7 @@ func Paper(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, NewErrResponse(ErrBadRequest, "query parameter need", nil))
 		return
 	}
-	cypherQuery := `MATCH (n) RETURN n`
+	cypherQuery := `MATCH (n) WHERE toLower(n.title) CONTAINS toLower($query) RETURN n`
 	logger.Debug(query)
 	engine := drivers.GetInstance()
 	result, err := engine.ExecuteRead(context.Background(), cypherQuery, map[string]interface{}{"query": query})
@@ -26,16 +27,10 @@ func Paper(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, NewErrResponse(err, "", nil))
 		return
 	}
-	if result.Err() != nil {
-		c.JSON(http.StatusInternalServerError, NewErrResponse(result.Err(), "", nil))
-		return
+	var results []string
+	for _, v := range result.Records {
+		m := v.AsMap()
+		results = append(results, m["n"].(dbtype.Node).Props["title"].(string))
 	}
-	var nodes []map[string]interface{}
-
-	for result.Next(context.Background()) {
-		resultMap := result.Record().AsMap()
-		nodes = append(nodes, resultMap)
-	}
-
-	c.JSON(http.StatusOK, NewResponse(nodes))
+	c.JSON(http.StatusOK, NewResponse(results))
 }

@@ -3,6 +3,7 @@ module github.com/Lincyaw/PaperGraph-backend
 go 1.21.6
 
 require (
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/neo4j/neo4j-go-driver/v5 v5.20.0
 	github.com/spf13/viper v1.18.2
