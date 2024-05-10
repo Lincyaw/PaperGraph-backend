@@ -1,4 +1,4 @@
 [database]
-uri = "bolt://localhost:7687"
-user = "dbUser"
-password = "dbPassword"
+uri = "bolt://10.10.10.196:7687"
+user = ""
+password = ""

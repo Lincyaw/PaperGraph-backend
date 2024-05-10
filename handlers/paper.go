@@ -14,10 +14,10 @@ func Paper(c *gin.Context) {
 	query := c.Query("query")
 
 	if query == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "query parameter is required"})
+		c.JSON(http.StatusBadRequest, NewErrResponse(ErrBadRequest, "query parameter need", nil))
 		return
 	}
-	cypherQuery := `MATCH (n) WHERE n.content CONTAINS $query RETURN n`
+	cypherQuery := `MATCH (n) RETURN n`
 	logger.Debug(query)
 	engine := drivers.GetInstance()
 	result, err := engine.ExecuteRead(context.Background(), cypherQuery, map[string]interface{}{"query": query})
@@ -26,7 +26,10 @@ func Paper(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, NewErrResponse(err, "", nil))
 		return
 	}
-
+	if result.Err() != nil {
+		c.JSON(http.StatusInternalServerError, NewErrResponse(result.Err(), "", nil))
+		return
+	}
 	var nodes []map[string]interface{}
 
 	for result.Next(context.Background()) {
@@ -34,10 +37,5 @@ func Paper(c *gin.Context) {
 		nodes = append(nodes, resultMap)
 	}
 
-	if result.Err() != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error in result"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": nodes})
+	c.JSON(http.StatusOK, NewResponse(nodes))
 }
